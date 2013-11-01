@@ -19,7 +19,7 @@ public class Simulator {
 	private static final int		TRAINING_ROUNDS					= 25;
 	private static final double		PROB_NO_INFLUANCE	  		 	= .3;
 	private static final double		STRENGTH_OF_TRENDS	  		 	= .5;
-	private static final double		RANDOM_STOCK_VARIATIONLIMIT 	= .2;
+	private static final double		RANDOM_STOCK_VARIATIONLIMIT 	= .002;
 	private static final int		STOCK_MAX_PRICE					= 800;
 	private static final int		STOCK_MIN_PRICE					= 50;
 	
@@ -291,7 +291,7 @@ public class Simulator {
 	 */
 	private double calculateStockPrice(Stock stock, int popularity, ArrayList<Double> formula){
 		double newPrice = 0;
-		newPrice += RANDOM_STOCK_VARIATIONLIMIT * random.nextDouble();
+		newPrice += (stock.currentPrice() * getRandomBetween(-1*RANDOM_STOCK_VARIATIONLIMIT, RANDOM_STOCK_VARIATIONLIMIT));
 		
 		//change from indicators
 		for (int i = 0; i < indicators.size(); i++){

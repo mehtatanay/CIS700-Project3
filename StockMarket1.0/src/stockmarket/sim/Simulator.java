@@ -15,7 +15,7 @@ public class Simulator {
 	private double 					STARTING_CAPITAL				= 100000;
 	private double					TRANSACTIONFEE					= 5;
 	private int 					NUM_STOCKS						= 10;
-    public static final int        	MAX_ROUNDS     					= 26;
+    public static final int        	MAX_ROUNDS     					= 525;
 	private static final int		TRAINING_ROUNDS					= 25;
 	private static final double		PROB_NO_INFLUANCE	  		 	= .3;
 	private static final double		STRENGTH_OF_TRENDS	  		 	= .5;
@@ -110,9 +110,11 @@ public class Simulator {
 			ArrayList<Class<Player>> configPlayers = config.getPlayers();
 			players.add(configPlayers.get(i).newInstance());
 			}
-		} catch (InstantiationException | IllegalAccessException e) {
+		} catch (InstantiationException e) {
 			e.printStackTrace();
-		}	
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void createIndicators(){

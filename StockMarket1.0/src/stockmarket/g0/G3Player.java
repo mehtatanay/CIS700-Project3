@@ -11,21 +11,23 @@ import stockmarket.sim.Stock;
 import stockmarket.sim.Trade;
 
 public class G3Player extends Player {
-
+	
+	HashMap <String, Object[]> regressions = new HashMap <String, Object[]> ();
+	
 	public String getName() {
-		return "Sophisticated Regression Player";
+		return "Regression Player";
 	}
 	
 	@Override
 	public void learn(ArrayList<EconomicIndicator> indicators,
 			ArrayList<Stock> stocks) {
 		
-		HashMap <String, OLSMultipleLinearRegression> regressions = new HashMap <String, OLSMultipleLinearRegression> ();
 		
 		for(int k = 0; k < stocks.size(); k ++) {
 			OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression ();
 			OLSMultipleLinearRegression bestRegression = new OLSMultipleLinearRegression ();
 			double maxR = Double.MIN_VALUE;
+			String best = "";
 			
 			for(int i = 1; i < 32; i ++) {
 				String currBinary = Integer.toBinaryString(i);
@@ -64,18 +66,31 @@ public class G3Player extends Player {
 				if(adjR > maxR) {
 					maxR = adjR;
 					bestRegression.newSampleData(y, x);
+					best = currBinary;
 				}
-			}			
-			regressions.put(stocks.get(k).getName(), bestRegression);
-		}
+			}	
+			
+			//use an ArrayList to ensure passing by value rather than reference
+			ArrayList<Double> betas = new ArrayList<Double> ();
+			double[] oldBetas = bestRegression.estimateRegressionParameters();
 
+			for(int i = 0; i < oldBetas.length; i++) {
+				betas.add(i,oldBetas[i]);
+			}
+
+			for(int i = 1; i < best.length()+1; i++) {
+				if(best.charAt(i-1) == '0') { betas.add(i,0.0); }
+			}
+			
+			regressions.put(stocks.get(k).getName(), betas.toArray());
+		}
 	}
 	
 	/* TODO
 	 * 1) Kelly ratio?
-	 * 2) Diversify portfolio by measuring historical correlation/forecasted correlation
-	 * 3) Try ARIMA + GARCH fit
-	 * 4) Only sell when made a gain
+	 * 2) Try ARIMA + GARCH fit
+	 * 3) Only sell when made a gain
+	 * 4) Implement some sort of asset allocation model (diversify by historical/forecasted correlation?)
 	 */
 
 	@Override
@@ -83,10 +98,22 @@ public class G3Player extends Player {
 			ArrayList<EconomicIndicator> indicators, ArrayList<Stock> stocks,
 			Portfolio porfolioCopy) {
 		
-		//If we forecast price going up by more than transaction cost, buy
+		ArrayList<Trade> toBePlaced = new ArrayList<Trade> ();
 		
-		//Potentially implement kelly ratio
-				
+		//Sell all the shit we made money on
+		
+		
+		//If we forecast price going up by more than transaction cost, buy
+		for(Stock s: stocks) {
+			Object[] current = regressions.get(s.getName());
+			double forecastedPrice = (Double) current[0]; //intercept
+			for(int i = 1; i < current.length; i++) {
+				forecastedPrice += ((Double) current[i]) * indicators.get(i-1).currentValue();
+			}
+			
+			
+		}
+						
 		//If last round, liquidate that shit
 		
 		return null;

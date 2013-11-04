@@ -15,7 +15,7 @@ public class Simulator {
 	private double 					STARTING_CAPITAL				= 100000;
 	private double					TRANSACTIONFEE					= 5;
 	private int 					NUM_STOCKS						= 10;
-    public static final int        	MAX_ROUNDS     					= 525;
+    public static final int        	MAX_ROUNDS     					= 26;
 	private static final int		TRAINING_ROUNDS					= 25;
 	private static final double		PROB_NO_INFLUANCE	  		 	= .3;
 	private static final double		STRENGTH_OF_TRENDS	  		 	= .5;
@@ -273,7 +273,7 @@ public class Simulator {
 	private void updateStockPrice(int round, Stock stock, ArrayList<Trade> marketTrades, ArrayList<Double> formula){
 		int popularity = 0;
 		for(Trade trade : marketTrades){
-			if (trade.getStock() == stock){
+			if (trade.getStock().getName() == stock.getName()){
 				popularity += trade.getQuantity();
 			}
 		}

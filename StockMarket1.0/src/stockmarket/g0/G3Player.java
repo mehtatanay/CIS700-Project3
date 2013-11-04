@@ -5,6 +5,7 @@ import java.util.HashMap;
 
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import stockmarket.sim.EconomicIndicator;
+import stockmarket.sim.Market;
 import stockmarket.sim.Player;
 import stockmarket.sim.Portfolio;
 import stockmarket.sim.Stock;
@@ -96,14 +97,22 @@ public class G3Player extends Player {
 	@Override
 	public ArrayList<Trade> placeTrade(int currentRound,
 			ArrayList<EconomicIndicator> indicators, ArrayList<Stock> stocks,
-			Portfolio porfolioCopy) {
+			Portfolio portfolioCopy) {
 		
-		ArrayList<Trade> toBePlaced = new ArrayList<Trade> ();
+		ArrayList<Trade> toBePlaced = new ArrayList<Trade> ();		
+		ArrayList<Stock> toBeBought = new ArrayList<Stock> ();
+		double pendingTransactionFees = 0;
 		
-		//Sell all the shit we made money on
+		//If last round, liquidate that shit
+		if(currentRound == Market.getMaxRounds()) {
+			toBePlaced.clear();
+			for(Stock s: portfolioCopy.getAllStocks()) {
+				toBePlaced.add(new Trade(Trade.SELL, s, portfolioCopy.getSharesOwned(s)));
+			}
+			return toBePlaced;
+		}
 		
-		
-		//If we forecast price going up by more than transaction cost, buy
+		//If we forecast price going up by more than 2*transaction cost, buy
 		for(Stock s: stocks) {
 			Object[] current = regressions.get(s.getName());
 			double forecastedPrice = (Double) current[0]; //intercept
@@ -111,12 +120,30 @@ public class G3Player extends Player {
 				forecastedPrice += ((Double) current[i]) * indicators.get(i-1).currentValue();
 			}
 			
-			
+			if((forecastedPrice - s.currentPrice()) > (Market.getTransactionFee()*2)) {
+				toBeBought.add(s);
+			}
 		}
-						
-		//If last round, liquidate that shit
 		
-		return null;
+		for(Stock s: portfolioCopy.getAllStocks()) {
+			if(!toBeBought.contains(s)) {
+				toBePlaced.add(new Trade(Trade.SELL, s, portfolioCopy.getSharesOwned(s)));
+				pendingTransactionFees -= Market.getTransactionFee();
+			}
+		}
+		
+		double availableCapital = portfolioCopy.getMonetaryValue() - pendingTransactionFees;
+		availableCapital -= Market.getTransactionFee() * toBeBought.size();
+		double capitalPerStock = availableCapital/toBeBought.size();
+		
+		for(Stock s: toBeBought) {
+			if(!portfolioCopy.getAllStocks().contains(s)) {
+				availableCapital -= Market.getTransactionFee();
+				toBePlaced.add(new Trade(Trade.BUY, s, (int) Math.floor(capitalPerStock/s.currentPrice())));
+			}
+		}
+		
+		return toBePlaced;
 	}
 
 	

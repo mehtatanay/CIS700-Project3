@@ -33,54 +33,71 @@ public class G3Player extends Player {
 			for(int i = 1; i < 32; i ++) {
 				String currBinary = Integer.toBinaryString(i);
 				
+				while(currBinary.length() < 5) {
+					String zero = "0";
+					currBinary = zero.concat(currBinary);
+				}
+				
 				//Count number of regressors in current attempt
 				int regressorCount = 0;
-				for(int j = 0; j < 5; j ++ ) {
+				for(int j = 0; j < currBinary.length(); j ++ ) {
 					if(currBinary.charAt(j) == '1') { regressorCount ++; }
 				}
 				
 				double[] y = new double[25];
-				double[][] x = new double[25] [5];
-				
-				//Zero initialize
-				for(int a = 0; a < 25; a ++) {
-					for(int b = 0; b < 5; b++) {
-						x[a][b] = 0;
-					}
-				}
+				double[][] x = new double[25] [regressorCount];
 				
 				//Populate data
 				for(int j = 0; j < 25; j ++) {
+					int col = 0;
 					y[j] = stocks.get(k).getPriceAtRound(j);
-					for(int a = 0; a < 5; a ++) {
+					for(int a = 0; a < currBinary.length(); a ++) {
 						if(currBinary.charAt(a) == '1') {
-							x[j][a] = indicators.get(a).getValueAtRound(j);
+							x[j][col] = indicators.get(a).getValueAtRound(j);
+							col ++;
 						}
 					}
 				}
 				
 				//Update regression
 				regression.newSampleData(y, x);
+				
+				/*for(int j = 0; j < 25; j++)  {
+					for(int q = 0; q < regressorCount; q++) {
+						System.out.print(x[j][q] + " ");
+					}
+					System.out.println(" ");
+				}*/
 
+				if(regression.calculateAdjustedRSquared() > maxR) {
+					maxR = regression.calculateAdjustedRSquared();
+					bestRegression.newSampleData(y, x);
+					best = currBinary;
+				}
+				
 				//Since we're using 0s to designate inactive regressors, we have to manually compute adjustment
-				double adjR = regression.calculateRSquared() - ((1-regression.calculateRSquared()) * (regressorCount / (5 - 1 - regressorCount)));
+				/*double adjR = regression.calculateRSquared() - ((1-regression.calculateRSquared()) * (regressorCount / (5 - 1 - regressorCount)));
 				if(adjR > maxR) {
 					maxR = adjR;
 					bestRegression.newSampleData(y, x);
 					best = currBinary;
-				}
+				}*/
 			}	
 			
 			//use an ArrayList to ensure passing by value rather than reference
 			ArrayList<Double> betas = new ArrayList<Double> ();
 			double[] oldBetas = bestRegression.estimateRegressionParameters();
-
-			for(int i = 0; i < oldBetas.length; i++) {
-				betas.add(i,oldBetas[i]);
-			}
-
-			for(int i = 1; i < best.length()+1; i++) {
-				if(best.charAt(i-1) == '0') { betas.add(i,0.0); }
+			int col = 1;
+			
+			betas.add(0,oldBetas[0]);
+			
+			for(int i = 1; i < 6; i++) {
+				if(best.charAt(i-1) == '0') { 
+					betas.add(i,0.0); 
+				} else {
+					betas.add(i,oldBetas[col]);
+					col ++;
+				}
 			}
 			
 			regressions.put(stocks.get(k).getName(), betas.toArray());
@@ -128,7 +145,7 @@ public class G3Player extends Player {
 		for(Stock s: portfolioCopy.getAllStocks()) {
 			if(!toBeBought.contains(s)) {
 				toBePlaced.add(new Trade(Trade.SELL, s, portfolioCopy.getSharesOwned(s)));
-				pendingTransactionFees -= Market.getTransactionFee();
+				pendingTransactionFees += Market.getTransactionFee();
 			}
 		}
 		
